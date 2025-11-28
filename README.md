@@ -12,7 +12,7 @@ NetworkManager ile manuel IPv6 adreslemeyi aynı anda kullanırken çıkan
 ## Kullanım
 Sırasıyla aşağıdaki dosyaları çalıştır:
 
-1. `scripts/01-ifcfg-setup.md`  
+1. `scripts/01-ifcfg-setup.sh`  
 2. `scripts/02-sysctl-setup.sh`  
 3. `scripts/03-rc-local-setup.sh`
 
