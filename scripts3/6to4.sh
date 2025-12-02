@@ -1,29 +1,73 @@
 #!/bin/bash
 
-# --- 6to4 Tunnel Setup Script (NAT Friendly) ---
+# =======================================================
+# TERMINATOR SCRIPT: 6to4 Tunnel (Auto-Fix IPv6 Blocks)
+# =======================================================
 
-# 1. Temizlik: Varsa eski tüneli sil (Hata verirse yoksay)
-ip tunnel del tun6to4 2>/dev/null
+# --- AYARLAR ---
+TUNNEL_NAME="tun6to4"
+LOCAL_IP="10.38.1.180"
+IPV6_ADDR="2002:d4fd:5f1b::1/16"
+IPV6_ROUTE="2002::/16"
 
-# 2. Kernel Ayarları: IPv6 Forwarding'i aç
-sysctl -w net.ipv6.conf.all.forwarding=1
+echo "[1/4] KÖTÜ AYARLAR TEMİZLENİYOR (/etc/sysctl.conf)..."
 
-# 3. Tünel Oluşturma (NAT AYARI)
-# remote: any (her yerden gelebilir)
-# local: 10.38.1.180 (Senin sunucunun fiziksel iç IP'si - KRİTİK NOKTA)
-ip tunnel add tun6to4 mode sit remote any local 10.38.1.180 ttl 64
+# --- AKILLI DÜZELTME MODÜLÜ ---
+# Regex Kullanıyoruz (-E):
+# "disable_ipv6" kelimesini bul, sonra ne kadar boşluk varsa geç,
+# "=" işaretini bul, yine boşlukları geç ve "1" rakamını bul.
+# Bulduğun her şeyi "disable_ipv6 = 0" ile değiştir.
 
-# 4. Tünel üzerinde IPv6'yı zorla aktif et (Permission denied hatasını önler)
-sysctl -w net.ipv6.conf.tun6to4.disable_ipv6=0
+sed -i -E 's/disable_ipv6\s*=\s*1/disable_ipv6 = 0/g' /etc/sysctl.conf
+sed -i -E 's/forwarding\s*=\s*0/forwarding = 1/g' /etc/sysctl.conf
 
-# 5. Arayüzü ayağa kaldır
-ip link set dev tun6to4 up
+echo "   -> IPv6 yasakları kaldırıldı (0 yapıldı)."
 
-# 6. IPv6 Adresini Ata
-# Buradaki adres senin PUBLIC IP'nin (212.253.95.27) hex karşılığıdır. Değişmez.
-ip -6 addr add 2002:d4fd:5f1b::1/16 dev tun6to4
+echo "[2/4] GARANTİ DOSYASI OLUŞTURULUYOR..."
+# Sistem dosyası bozuk olsa bile, bu dosya en son okunur ve düzeltir.
+cat <<EOF > /etc/sysctl.d/99-6to4-master.conf
+net.ipv4.ip_forward = 1
+net.ipv6.conf.all.forwarding = 1
+net.ipv6.conf.default.forwarding = 1
+net.ipv6.conf.all.disable_ipv6 = 0
+net.ipv6.conf.default.disable_ipv6 = 0
+net.ipv6.conf.lo.disable_ipv6 = 0
+net.ipv6.conf.$TUNNEL_NAME.disable_ipv6 = 0
+EOF
 
-# 7. Routing Ekle
-ip -6 route add 2002::/16 dev tun6to4
+# Ayarları uygula
+sysctl --system > /dev/null 2>&1
 
-echo "6to4 Tüneli (NAT Arkası) Başarıyla Kuruldu."
+echo "[3/4] NETWORK MANAGER İLE TÜNEL KURULUYOR..."
+# Temizlik
+nmcli connection delete "$TUNNEL_NAME" > /dev/null 2>&1
+ip tunnel del "$TUNNEL_NAME" > /dev/null 2>&1
+
+# Kurulum
+nmcli con add type ip-tunnel \
+    con-name "$TUNNEL_NAME" \
+    ifname "$TUNNEL_NAME" \
+    mode sit \
+    remote 0.0.0.0 \
+    local "$LOCAL_IP" \
+    ipv6.method manual \
+    ipv6.addresses "$IPV6_ADDR" \
+    ipv6.routes "$IPV6_ROUTE" > /dev/null
+
+if [ $? -eq 0 ]; then
+    echo "   -> Tünel başarıyla oluşturuldu."
+else
+    echo "   -> HATA: Tünel kurulamadı!"
+    exit 1
+fi
+
+echo "[4/4] BAĞLANTI AÇILIYOR..."
+nmcli connection up "$TUNNEL_NAME" > /dev/null
+
+echo "=========================================="
+echo "İŞLEM TAMAM. SONUÇ:"
+# O yasaklı ayarların düzelip düzelmediğini kanıtlayalım:
+sysctl net.ipv6.conf.all.disable_ipv6
+echo "------------------------------------------"
+ip addr show "$TUNNEL_NAME" | grep "inet6"
+echo "=========================================="
