@@ -1,0 +1,18 @@
+root ➜ ~ $ ip tunnel show
+root ➜ ~ $ # 1. Mevcut bir tünel varsa temizleyelim (Hata verirse sorun değil)
+root ➜ ~ $ ip tunnel del tun6to4 2>/dev/null
+root ➜ ~ $ 
+root ➜ ~ $ # 2. Tünel arayüzünü oluştur (Local IP senin Public IP'n)
+root ➜ ~ $ ip tunnel add tun6to4 mode sit remote any local 212.253.95.27 ttl 64
+root ➜ ~ $ 
+root ➜ ~ $ # 3. Arayüzü ayağa kaldır
+root ➜ ~ $ ip link set dev tun6to4 up
+root ➜ ~ $ 
+root ➜ ~ $ # 4. Hesapladığımız 6to4 adresini ver (Sonuna ::1 ekledik)
+root ➜ ~ $ ip -6 addr add 2002:d4fd:5f1b::1/16 dev tun6to4
+RTNETLINK answers: Permission denied
+root ➜ ~ $ 
+root ➜ ~ $ # 5. Routing: 2002:: ile başlayan her şeyi tünele gönder
+root ➜ ~ $ ip -6 route add 2002::/16 dev tun6to4
+Error: IPv6 is disabled on nexthop device.
+root ➜ ~ $ 
