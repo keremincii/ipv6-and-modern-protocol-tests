@@ -63,7 +63,7 @@ echo ">>> [5/8] Tayga Config..."
 cat > /etc/tayga.conf <<EOF
 tun-device nat64
 ipv4-addr 192.168.255.1
-ipv6-addr 2001:db8:50::180
+ipv6-addr 2001:db8:50::64
 prefix 64:ff9b::/96
 dynamic-pool 192.168.255.0/24
 data-dir /var/spool/tayga
