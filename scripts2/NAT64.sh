@@ -95,7 +95,7 @@ ExecStartPost=/usr/sbin/sysctl -w net.ipv6.conf.eth0.forwarding=1
 ExecStartPost=-/usr/sbin/ip link set nat64 up
 ExecStartPost=-/usr/sbin/ip addr replace 192.168.255.1 dev nat64
 ExecStartPost=-/usr/sbin/ip route replace 192.168.255.0/24 dev nat64
-ExecStartPost=-/usr/sbin/ip -6 route replace 64:ff9b::/96 dev nat64
+ExecStartPost=-/usr/sbin/ip -6 route replace 2001:db8:64:ff9b::/96 dev nat64
 
 # NAT Kuralları (Mevcutlari temizle ve yeniden ekle)
 ExecStartPost=-/usr/sbin/iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
