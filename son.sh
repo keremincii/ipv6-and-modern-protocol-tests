@@ -7,7 +7,7 @@
 # --- AYARLAR ---
 IFACE="eth0"
 # Gateway IPv6 (Bu makinenin LAN IP'si)
-TARGET_IPV6="2001:db8:50::60"
+TARGET_IPV6="2001:db8:50::50"
 # DHCP Dağıtılacak Subnet
 SUBNET_PREFIX="2001:db8:50::"
 # 6to4 Tünel Ayarları
@@ -180,7 +180,7 @@ cat <<EOF > "$CONFIG_FILE"
     "subnet6": [
         {
             "subnet": "${SUBNET_PREFIX}/64",
-            "pools": [ { "pool": "${SUBNET_PREFIX}30 - ${SUBNET_PREFIX}200" } ],
+            "pools": [ { "pool": "${SUBNET_PREFIX}60 - ${SUBNET_PREFIX}200" } ],
             "interface": "eth0",
             "option-data": [
                 {
